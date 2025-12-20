@@ -1,0 +1,28 @@
+digest: bb4e5e15
+name: dataset
+profile: '{"num_rows": 316, "num_elements": 10112}'
+schema: '{"mlflow_colspec": [{"type": "long", "name": "school", "required": true},
+  {"type": "long", "name": "sex", "required": true}, {"type": "double", "name": "age",
+  "required": true}, {"type": "long", "name": "address", "required": true}, {"type":
+  "long", "name": "famsize", "required": true}, {"type": "long", "name": "Pstatus",
+  "required": true}, {"type": "double", "name": "Medu", "required": true}, {"type":
+  "double", "name": "Fedu", "required": true}, {"type": "long", "name": "Mjob", "required":
+  true}, {"type": "long", "name": "Fjob", "required": true}, {"type": "long", "name":
+  "reason", "required": true}, {"type": "long", "name": "guardian", "required": true},
+  {"type": "double", "name": "traveltime", "required": true}, {"type": "double", "name":
+  "studytime", "required": true}, {"type": "double", "name": "failures", "required":
+  true}, {"type": "long", "name": "schoolsup", "required": true}, {"type": "long",
+  "name": "famsup", "required": true}, {"type": "long", "name": "paid", "required":
+  true}, {"type": "long", "name": "activities", "required": true}, {"type": "long",
+  "name": "nursery", "required": true}, {"type": "long", "name": "higher", "required":
+  true}, {"type": "long", "name": "internet", "required": true}, {"type": "long",
+  "name": "romantic", "required": true}, {"type": "double", "name": "famrel", "required":
+  true}, {"type": "double", "name": "freetime", "required": true}, {"type": "double",
+  "name": "goout", "required": true}, {"type": "double", "name": "Dalc", "required":
+  true}, {"type": "double", "name": "Walc", "required": true}, {"type": "double",
+  "name": "health", "required": true}, {"type": "double", "name": "absences", "required":
+  true}, {"type": "double", "name": "G1", "required": true}, {"type": "double", "name":
+  "G2", "required": true}]}'
+source: '{"tags": {"mlflow.user": "Admin", "mlflow.source.name": "modelling.py", "mlflow.source.type":
+  "LOCAL", "mlflow.source.git.commit": "bcf439df6599ce6a1b8a3b8517d301f32cea5434"}}'
+source_type: code

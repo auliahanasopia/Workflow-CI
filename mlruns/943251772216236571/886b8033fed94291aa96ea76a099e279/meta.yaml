@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/SMSML_Aulia-Hana-Sophiah/Workflow-CI/MLProject/mlruns/943251772216236571/886b8033fed94291aa96ea76a099e279/artifacts
+deleted_time: 1766251315015
+end_time: 1766248047408
+entry_point_name: ''
+experiment_id: '943251772216236571'
+lifecycle_stage: deleted
+run_id: 886b8033fed94291aa96ea76a099e279
+run_name: persistent-hog-684
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1766248046574
+status: 3
+tags: []
+user_id: Admin

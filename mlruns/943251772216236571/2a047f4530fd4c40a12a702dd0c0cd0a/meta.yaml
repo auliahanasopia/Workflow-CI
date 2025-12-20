@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/SMSML_Aulia-Hana-Sophiah/Workflow-CI/MLProject/mlruns/943251772216236571/2a047f4530fd4c40a12a702dd0c0cd0a/artifacts
+end_time: 1766248046461
+entry_point_name: ''
+experiment_id: '943251772216236571'
+lifecycle_stage: active
+run_id: 2a047f4530fd4c40a12a702dd0c0cd0a
+run_name: omniscient-slug-60
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1766248031512
+status: 3
+tags: []
+user_id: Admin

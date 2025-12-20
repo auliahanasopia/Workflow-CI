@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/SMSML_Aulia-Hana-Sophiah/Workflow-CI/MLProject/mlruns/0/e59fddccde66419fa205c0adf21932c6/artifacts
+deleted_time: 1766251037388
+end_time: 1766217498122
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: deleted
+run_id: e59fddccde66419fa205c0adf21932c6
+run_name: invincible-panda-543
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1766217444831
+status: 3
+tags: []
+user_id: Admin

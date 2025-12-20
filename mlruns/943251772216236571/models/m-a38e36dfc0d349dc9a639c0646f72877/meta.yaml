@@ -1,0 +1,10 @@
+artifact_location: file:///C:/SMSML_Aulia-Hana-Sophiah/Workflow-CI/MLProject/mlruns/943251772216236571/models/m-a38e36dfc0d349dc9a639c0646f72877/artifacts
+creation_timestamp: 1766247322586
+experiment_id: '943251772216236571'
+last_updated_timestamp: 1766247337121
+model_id: m-a38e36dfc0d349dc9a639c0646f72877
+model_type: null
+name: model
+source_run_id: 8d27d8b02e864cd7b1380ecc24cadd1a
+status: 2
+status_message: null
