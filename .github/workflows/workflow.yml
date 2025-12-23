@@ -56,5 +56,3 @@ jobs:
         run: |
           docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
-
-
