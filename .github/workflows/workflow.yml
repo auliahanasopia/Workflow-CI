@@ -9,6 +9,8 @@ on:
 env:
   CSV_URL: "studentmat_preprocessing.csv"
   TARGET_VAR: "G3"
+  # Set tracking URI secara global agar build-docker tahu tempat mencari model
+  MLFLOW_TRACKING_URI: "dagshub.com"
 
 jobs:
   build:
@@ -29,28 +31,25 @@ jobs:
           pip install mlflow==2.19.0 dagshub scikit-learn pandas numpy seaborn
 
       - name: Run MLflow Project
+        id: train_model
         env:
-          # Variabel ini krusial agar dagshub.init() tidak meminta login browser
           DAGSHUB_USER_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
-          # Kredensial tambahan untuk MLflow Tracking
           MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_TOKEN }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          mlflow run . --env-manager=local
-
-      - name: Get latest MLflow run_id
-        run: |
-          # Mencoba mengambil run_id dari direktori lokal mlruns
-          RUN_ID=$(ls -td mlruns/0/* 2>/dev/null | head -n1 | xargs -n1 basename)
-          if [ -z "$RUN_ID" ]; then
-            echo "No MLflow run found locally"
-            exit 1
-          fi
-          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
-          echo "Latest run_id: $RUN_ID"
+          # Jalankan mlflow dan simpan output ke log
+          OUTPUT=$(mlflow run . --env-manager=local)
+          echo "$OUTPUT"
+          # Ambil RUN_ID dari output print di modelling.py
+          RID=$(echo "$OUTPUT" | grep "RUN_ID_TAG:" | cut -d':' -f2)
+          echo "RUN_ID=$RID" >> $GITHUB_ENV
 
       - name: Build Docker Model
+        env:
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_TOKEN }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
+          # Build docker mengambil model langsung dari DagsHub menggunakan RUN_ID
           mlflow models build-docker \
             --model-uri "runs:/$RUN_ID/model" \
             --name "cc"
@@ -65,3 +64,4 @@ jobs:
         run: |
           docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
+
