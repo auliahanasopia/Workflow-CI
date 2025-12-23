@@ -1,18 +1,26 @@
+import os
 import mlflow
 import mlflow.sklearn
+import dagshub
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-import numpy as np
-import warnings
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 
-warnings.filterwarnings("ignore")
-np.random.seed(42)
+assert os.getenv("DAGSHUB_TOKEN"), "DAGSHUB_TOKEN is not set"
 
-# Load data
-data = pd.read_csv("studentmat_preprocessing.csv")
+dagshub.init(
+    repo_owner="auliahanasopia",
+    repo_name="Workflow-CI",
+    mlflow=True
+)
 
-TARGET = "G3"
+mlflow.set_experiment("CI-MLflow-Project")
+
+DATA_PATH = "studentmat_preprocessing.csv"
+TARGET = "target"
+
+data = pd.read_csv(DATA_PATH)
 
 X = data.drop(TARGET, axis=1)
 y = data[TARGET]
@@ -21,23 +29,18 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-input_example = X_train.iloc[:5]
-
-mlflow.set_experiment("CI-MLflow-Project")
-
-with mlflow.start_run():
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
+with mlflow.start_run(run_name="rf-ci", nested=True) as run:
+    model = RandomForestClassifier(n_estimators=200, random_state=42)
     model.fit(X_train, y_train)
 
-    accuracy = model.score(X_test, y_test)
+    preds = model.predict(X_test)
+    acc = accuracy_score(y_test, preds)
 
-    mlflow.log_metric("accuracy", accuracy)
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model",
-        input_example=input_example
-    )
+    mlflow.log_param("model", "RandomForest")
+    mlflow.log_metric("accuracy", acc)
+    mlflow.sklearn.log_model(model, "model")
 
-    print(f"RUN_ID_TAG:{mlflow.active_run().info.run_id}")
+    print(f"RUN_ID_TAG:{run.info.run_id}")
+
 
 
