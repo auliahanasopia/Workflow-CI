@@ -5,14 +5,16 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:
+
+env:
+  CSV_URL: "studentmat_preprocessing.csv"
+  TARGET_VAR: "G3"
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -30,7 +32,9 @@ jobs:
         env:
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          mlflow run . --env-manager=local
+          mlflow run . --env-manager=local \
+            -P CSV_URL="${CSV_URL}" \
+            -P TARGET_VAR="${TARGET_VAR}"
 
       - name: Get latest MLflow run_id
         run: |
@@ -58,3 +62,4 @@ jobs:
         run: |
           docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
+
