@@ -7,7 +7,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
 assert os.getenv("DAGSHUB_TOKEN"), "DAGSHUB_TOKEN is not set"
-
 dagshub.auth.add_app_token(os.environ["DAGSHUB_TOKEN"])
 
 dagshub.init(
@@ -28,12 +27,14 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-with mlflow.start_run(nested=True):
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
 
-    acc = model.score(X_test, y_test)
+accuracy = model.score(X_test, y_test)
 
-    mlflow.log_metric("accuracy", acc)
-    mlflow.sklearn.log_model(model, "model")
+mlflow.log_metric("accuracy", accuracy)
+mlflow.sklearn.log_model(model, "model")
+
+
+
 
