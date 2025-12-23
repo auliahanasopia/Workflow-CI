@@ -14,24 +14,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12.7"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install mlflow==2.19.0 dagshub scikit-learn pandas numpy seaborn
 
-      - name: Run MLflow project
+      - name: Run MLflow Project
+        env:
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           mlflow run . --env-manager=local
 
       - name: Get latest MLflow run_id
         run: |
-          RUN_ID=$(ls -td mlruns/0/* | head -n1 | xargs -n1 basename)
+          RUN_ID=$(ls -td mlruns/0/* | head -n 1 | xargs -n 1 basename)
+          if [ -z "$RUN_ID" ]; then
+            echo "No MLflow run found"
+            exit 1
+          fi
           echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "Latest run_id: $RUN_ID"
 
       - name: Build Docker Model
         run: |
@@ -49,3 +56,4 @@ jobs:
         run: |
           docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
+
