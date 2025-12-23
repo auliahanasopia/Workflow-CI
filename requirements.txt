@@ -1,6 +1,5 @@
-pandas
+mlflow==2.19.0
 scikit-learn
-mlflow
-matplotlib
+pandas
+numpy
 seaborn
-dagshub
