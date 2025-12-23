@@ -1,83 +1,71 @@
-name: CI/CD MLflow
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  - name: Set up Python
+    uses: actions/setup-python@v4
+    with:
+      python-version: "3.10"
 
-env:
-  CSV_URL: "MLproject/studentmat_preprocessing.csv"
-  TARGET_VAR: "Credit_Score"
+  - name: Show Python and mlflow versions (debug)
+    run: |
+      python --version
+      pip --version
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+  - name: Check Env
+    run: |
+      echo "CSV_URL=$CSV_URL"
+      echo "TARGET_VAR=$TARGET_VAR"
 
-    steps:
-      # Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  - name: Install dependencies
+    run: |
+      set -e
+      python -m pip install --upgrade pip
+      pip install mlflow dagshub scikit-learn pandas numpy seaborn
 
-      # Setup Python (STABIL untuk ML)
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+  - name: Run MLflow Project
+    env:
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+    run: |
+      set -e
+      # Run the project from the repo root (use '.' not the MLproject filename)
+      mlflow run . --env-manager=local -P CSV_URL="$CSV_URL" -P TARGET_VAR="$TARGET_VAR"
 
-      # Check Env Variables
-      - name: Check Env
-        run: |
-          echo "CSV_URL=$CSV_URL"
-          echo "TARGET_VAR=$TARGET_VAR"
+  - name: Get latest MLflow run_id
+    run: |
+      set -e
+      # Find the most recent run directory under mlruns/0
+      RUN_DIR=$(ls -td mlruns/0/* 2>/dev/null | head -n1 || true)
+      if [ -z "$RUN_DIR" ]; then
+        echo "No MLflow run found in mlruns/0. Failing."
+        ls -la mlruns || true
+        exit 1
+      fi
+      RUN_ID=$(basename "$RUN_DIR")
+      echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+      echo "Latest run_id: $RUN_ID"
 
-      # Install dependencies (LENGKAP)
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install mlflow dagshub scikit-learn pandas numpy seaborn
+  - name: Build Docker Model
+    run: |
+      set -e
+      # Confirm the artifact path your MLflow run logged (here assumed "model")
+      mlflow models build-docker \
+        --model-uri "runs:/$RUN_ID/model" \
+        --name "cc"
 
-      # Run MLflow Project
-      - name: Run MLflow Project
-        env:
-          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
-        run: |
-          mlflow run MLproject --env-manager=local
+  - name: Log in to Docker Hub
+    uses: docker/login-action@v2
+    with:
+      username: ${{ secrets.DOCKER_HUB_USERNAME }}
+      password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      # Get latest run_id (LOCAL TRACKING)
-      - name: Get latest MLflow run_id
-        run: |
-          RUN_ID=$(ls -td mlruns/0/*/ | head -n 1 | cut -d'/' -f3)
-          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
-          echo "Latest run_id: $RUN_ID"
+  - name: Tag Docker Image
+    run: |
+      docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
 
-      # Build Docker Model
-      - name: Build Docker Model
-        run: |
-          mlflow models build-docker \
-            --model-uri "runs:/$RUN_ID/model" \
-            --name "cc"
-
-      # Login to Docker Hub
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
-      # Tag Docker Image
-      - name: Tag Docker Image
-        run: |
-          docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
-
-      # Push Docker Image
-      - name: Push Docker Image
-        run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
-
-
-
-
-
+  - name: Push Docker Image
+    run: |
+      set -e
+      docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
