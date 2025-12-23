@@ -26,15 +26,22 @@ jobs:
       - name: Run MLflow Project
         run: |
           export DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }}
+          
       - name: Get latest MLflow run_id
+        env:
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          RUN_ID=$(ls -td mlruns/0/* 2>/dev/null | head -n1 | xargs -n1 basename)
+          export MLFLOW_TRACKING_URI=https://dagshub.com/auliahanasopia/Workflow-CI.mlflow
+          RUN_ID=$(mlflow runs list --experiment-name CI-MLflow-Project --max-results 1 | awk 'NR==2 {print $1}')
+    
           if [ -z "$RUN_ID" ]; then
-            echo "No MLflow run found"
-            exit 1
+          echo "No MLflow run found"
+          exit 1
           fi
+
           echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
-          echo "Latest run_id: $RUN_ID"
+    echo "Latest run_id: $RUN_ID"
+
       - name: Build Docker Model
         run: |
           mlflow models build-docker \
