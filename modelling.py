@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
+# Pastikan token ada (WAJIB untuk CI)
 assert os.getenv("DAGSHUB_TOKEN"), "DAGSHUB_TOKEN is not set"
 dagshub.auth.add_app_token(os.environ["DAGSHUB_TOKEN"])
 
@@ -17,10 +18,6 @@ dagshub.init(
 
 mlflow.set_experiment("CI-MLflow-Project")
 
-run_id = os.environ.get("MLFLOW_RUN_ID")
-if run_id:
-    mlflow.start_run(run_id=run_id)
-
 data = pd.read_csv("studentmat_preprocessing.csv")
 
 TARGET = "target"
@@ -31,18 +28,21 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
+with mlflow.start_run():
+    model = RandomForestClassifier(
+        n_estimators=100,
+        random_state=42
+    )
 
-accuracy = model.score(X_test, y_test)
+    model.fit(X_train, y_train)
 
-mlflow.log_metric("accuracy", accuracy)
-mlflow.sklearn.log_model(model, "model")
+    accuracy = model.score(X_test, y_test)
 
-mlflow.end_run()
+    mlflow.log_param("n_estimators", 100)
+    mlflow.log_metric("accuracy", accuracy)
 
-
-
-
-
-
+    mlflow.sklearn.log_model(
+        model,
+        artifact_path="model",
+        input_example=X_train.iloc[:5]
+    )
