@@ -17,6 +17,10 @@ dagshub.init(
 
 mlflow.set_experiment("CI-MLflow-Project")
 
+run_id = os.environ.get("MLFLOW_RUN_ID")
+if run_id:
+    mlflow.start_run(run_id=run_id)
+
 data = pd.read_csv("studentmat_preprocessing.csv")
 
 TARGET = "target"
@@ -34,6 +38,10 @@ accuracy = model.score(X_test, y_test)
 
 mlflow.log_metric("accuracy", accuracy)
 mlflow.sklearn.log_model(model, "model")
+
+mlflow.end_run()
+
+
 
 
 
