@@ -1,8 +1,0 @@
-artifact_location: file:///C:/SMSML_Aulia-Hana-Sophiah/Workflow-CI/MLProject/mlruns/641526499097282806
-creation_time: 1766217175194
-experiment_id: '641526499097282806'
-last_update_time: 1766251066563
-lifecycle_stage: deleted
-name: smsml-experiment
-tags:
-  mlflow.experimentKind: custom_model_development
