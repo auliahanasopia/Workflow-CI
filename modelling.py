@@ -1,77 +1,95 @@
-import warnings
 import mlflow
 import mlflow.sklearn
-import dagshub
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
+import numpy as np
+import warnings
+import sys
 
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
+if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
+    np.random.seed(40)
 
-warnings.filterwarnings("ignore")
+    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    mlflow.set_experiment("CI-MLflow-DagsHub")
 
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    mlflow.sklearn.autolog(
+        log_input_examples=True,
+        log_model_signatures=True
+    )
 
-dagshub.init(
-    repo_owner="auliahanasopia",
-    repo_name="Workflow-CI",
-    mlflow=False  
-)
+    file_path = (
+        sys.argv[3]
+        if len(sys.argv) > 3
+        else os.path.join(os.path.dirname(os.path.abspath(__file__)), "train_pca.csv")
+    )
 
-mlflow.set_experiment("CI-MLflow-DagsHub")
+    if not os.path.exists(file_path):
+        raise FileNotFoundError("Dataset train_pca.csv tidak ditemukan")
 
-mlflow.sklearn.autolog(
-    log_input_examples=True,
-    log_model_signatures=True
-)
+    data = pd.read_csv(file_path)
 
-X, y = load_iris(return_X_y=True)
+    X = data.drop("Credit_Score", axis=1)
+    y = data["Credit_Score"]
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
-)
-
-with mlflow.start_run(run_name="rf-ci") as run:
-
-    model = RandomForestClassifier(
-        n_estimators=100,
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
         random_state=42,
-        n_jobs=-1
+        test_size=0.2,
+        stratify=y
     )
 
-    model.fit(X_train, y_train)
+    input_example = X_train.head(5)
 
-    preds = model.predict(X_test)
-    acc = accuracy_score(y_test, preds)
+    n_estimators = int(sys.argv[1]) if len(sys.argv) > 1 else 505
+    max_depth = int(sys.argv[2]) if len(sys.argv) > 2 else 37
 
-    mlflow.log_metric("accuracy_manual", acc)
+    with mlflow.start_run(run_name="rf-ci-advanced") as run:
 
-    cm = confusion_matrix(y_test, preds)
+        model = RandomForestClassifier(
+            n_estimators=n_estimators,
+            max_depth=max_depth,
+            random_state=42,
+            n_jobs=-1
+        )
 
-    plt.figure(figsize=(6, 4))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-    plt.xlabel("Predicted")
-    plt.ylabel("Actual")
-    plt.title("Confusion Matrix")
+        model.fit(X_train, y_train)
 
-    cm_path = "confusion_matrix.png"
-    plt.savefig(cm_path)
-    plt.close()
+        y_pred = model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
 
-    mlflow.log_artifact(cm_path)
+        # Manual metric tambahan (aman walau autolog aktif)
+        mlflow.log_metric("accuracy_manual", accuracy)
 
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model"
-    )
+        cm = confusion_matrix(y_test, y_pred)
 
-    print(f"RUN_ID:{run.info.run_id}")
+        plt.figure(figsize=(6, 4))
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+        plt.xlabel("Predicted")
+        plt.ylabel("Actual")
+        plt.title("Confusion Matrix")
+
+        cm_path = "confusion_matrix.png"
+        plt.savefig(cm_path)
+        plt.close()
+
+        mlflow.log_artifact(cm_path)
+
+        mlflow.sklearn.log_model(
+            sk_model=model,
+            artifact_path="model",
+            input_example=input_example
+        )
+
+        print(f"RUN_ID:{run.info.run_id}")
+
+
 
 
 
