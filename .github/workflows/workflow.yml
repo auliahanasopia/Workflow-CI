@@ -1,71 +1,60 @@
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
-    with:
-      fetch-depth: 0
+name: workflow-ci-project
 
-  - name: Set up Python
-    uses: actions/setup-python@v4
-    with:
-      python-version: "3.10"
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
-  - name: Show Python and mlflow versions (debug)
-    run: |
-      python --version
-      pip --version
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  - name: Check Env
-    run: |
-      echo "CSV_URL=$CSV_URL"
-      echo "TARGET_VAR=$TARGET_VAR"
+    steps:
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-  - name: Install dependencies
-    run: |
-      set -e
-      python -m pip install --upgrade pip
-      pip install mlflow dagshub scikit-learn pandas numpy seaborn
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
-  - name: Run MLflow Project
-    env:
-      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
-    run: |
-      set -e
-      # Run the project from the repo root (use '.' not the MLproject filename)
-      mlflow run . --env-manager=local -P CSV_URL="$CSV_URL" -P TARGET_VAR="$TARGET_VAR"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mlflow dagshub scikit-learn pandas numpy seaborn
 
-  - name: Get latest MLflow run_id
-    run: |
-      set -e
-      # Find the most recent run directory under mlruns/0
-      RUN_DIR=$(ls -td mlruns/0/* 2>/dev/null | head -n1 || true)
-      if [ -z "$RUN_DIR" ]; then
-        echo "No MLflow run found in mlruns/0. Failing."
-        ls -la mlruns || true
-        exit 1
-      fi
-      RUN_ID=$(basename "$RUN_DIR")
-      echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
-      echo "Latest run_id: $RUN_ID"
+      - name: Run MLflow Project
+        env:
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          mlflow run . --env-manager=local
 
-  - name: Build Docker Model
-    run: |
-      set -e
-      # Confirm the artifact path your MLflow run logged (here assumed "model")
-      mlflow models build-docker \
-        --model-uri "runs:/$RUN_ID/model" \
-        --name "cc"
+      - name: Get latest MLflow run_id
+        run: |
+          RUN_ID=$(ls -td mlruns/0/* 2>/dev/null | head -n1 | xargs -n1 basename)
+          if [ -z "$RUN_ID" ]; then
+            echo "No MLflow run found"
+            exit 1
+          fi
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "Latest run_id: $RUN_ID"
 
-  - name: Log in to Docker Hub
-    uses: docker/login-action@v2
-    with:
-      username: ${{ secrets.DOCKER_HUB_USERNAME }}
-      password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Build Docker Model
+        run: |
+          mlflow models build-docker \
+            --model-uri "runs:/$RUN_ID/model" \
+            --name "cc"
 
-  - name: Tag Docker Image
-    run: |
-      docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-  - name: Push Docker Image
-    run: |
-      set -e
-      docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
+      - name: Push Docker Image
+        run: |
+          docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
