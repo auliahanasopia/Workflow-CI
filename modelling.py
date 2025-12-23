@@ -8,7 +8,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
-# Init DagsHub (NON-interaktif, token via ENV: DAGSHUB_TOKEN)
+assert os.getenv("DAGSHUB_TOKEN"), "DAGSHUB_TOKEN is not set"
+
+dagshub.auth.add_app_token(os.environ["DAGSHUB_TOKEN"])
+
 dagshub.init(
     repo_owner="auliahanasopia",
     repo_name="Workflow-CI",
@@ -32,3 +35,4 @@ with mlflow.start_run():
     mlflow.log_param("model", "RandomForest")
     mlflow.log_metric("accuracy", acc)
     mlflow.sklearn.log_model(model, "model")
+
