@@ -4,10 +4,12 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 
-mlflow.set_experiment("CI-MLflow-Project")
-
 with mlflow.start_run() as run:
     run_id = run.info.run_id
+
+    # simpan run_id ke file
+    with open("run_id.txt", "w") as f:
+        f.write(run_id)
 
     data = pd.read_csv("studentmat_preprocessing.csv")
 
@@ -27,8 +29,7 @@ with mlflow.start_run() as run:
     mlflow.log_metric("accuracy", accuracy)
     mlflow.sklearn.log_model(model, "model")
 
-    with open("run_id.txt", "w") as f:
-        f.write(run_id)
+
 
 
 
