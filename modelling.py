@@ -1,17 +1,8 @@
-import os
 import mlflow
 import mlflow.sklearn
-import dagshub
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-
-dagshub.auth.add_app_token(os.environ["DAGSHUB_TOKEN"])
-dagshub.init(
-    repo_owner="auliahanasopia",
-    repo_name="student-performance-mlops",
-    mlflow=True
-)
 
 mlflow.set_experiment("CI-MLflow-Project")
 
@@ -32,3 +23,4 @@ accuracy = model.score(X_test, y_test)
 mlflow.log_param("n_estimators", 100)
 mlflow.log_metric("accuracy", accuracy)
 mlflow.sklearn.log_model(model, "model")
+
