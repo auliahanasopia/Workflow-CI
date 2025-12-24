@@ -20,7 +20,9 @@ model.fit(X_train, y_train)
 
 accuracy = model.score(X_test, y_test)
 
+# logging LANGSUNG
 mlflow.log_param("n_estimators", 100)
 mlflow.log_metric("accuracy", accuracy)
 mlflow.sklearn.log_model(model, "model")
+
 
