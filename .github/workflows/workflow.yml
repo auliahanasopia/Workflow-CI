@@ -28,7 +28,7 @@ jobs:
             scikit-learn \
             pandas \
             numpy
-            
+
       - name: Run MLflow Project
         env:
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
@@ -44,15 +44,20 @@ jobs:
           MLFLOW_TRACKING_USERNAME: auliahanasopia
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          EXPERIMENT_ID=$(mlflow experiments list | awk '$2=="CI-MLflow-Project" {print $1}')
+          EXPERIMENT_ID=$(mlflow experiments search | awk '$2=="CI-MLflow-Project" {print $1}')
+
+          if [ -z "$EXPERIMENT_ID" ]; then
+            echo "Experiment CI-MLflow-Project not found"
+            exit 1
+          fi
 
           RUN_ID=$(mlflow runs list \
-          --experiment-id $EXPERIMENT_ID \
-          --max-results 1 | awk 'NR==2 {print $1}')
+            --experiment-id $EXPERIMENT_ID \
+            --max-results 1 | awk 'NR==2 {print $1}')
 
           if [ -z "$RUN_ID" ]; then
-          echo "No MLflow run found"
-          exit 1
+            echo "No MLflow run found"
+            exit 1
           fi
 
           echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
@@ -74,4 +79,5 @@ jobs:
             --model-uri "runs:/$RUN_ID/model" \
             --name "${{ secrets.DOCKER_HUB_USERNAME }}/cc"
 
+          docker tag "${{ secrets.DOCKER_HUB_USERNAME }}/cc" "${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest"
           docker push "${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest"
