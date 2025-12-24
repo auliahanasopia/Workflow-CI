@@ -2,22 +2,23 @@ name: workflow-ci-project
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12.7"
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
@@ -34,10 +35,11 @@ jobs:
       - name: Get latest MLflow run_id
         env:
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          MLFLOW_TRACKING_URI: https://dagshub.com/auliahanasopia/Workflow-CI.mlflow
         run: |
-          export MLFLOW_TRACKING_URI=https://dagshub.com/auliahanasopia/Workflow-CI.mlflow
-
-          RUN_ID=$(mlflow runs list --experiment-name CI-MLflow-Project --max-results 1 | awk 'NR==2 {print $1}')
+          RUN_ID=$(mlflow runs list \
+            --experiment-name CI-MLflow-Project \
+            --max-results 1 | awk 'NR==2 {print $1}')
 
           if [ -z "$RUN_ID" ]; then
             echo "No MLflow run found"
@@ -48,6 +50,9 @@ jobs:
           echo "Latest run_id: $RUN_ID"
 
       - name: Build Docker Model
+        env:
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          MLFLOW_TRACKING_URI: https://dagshub.com/auliahanasopia/Workflow-CI.mlflow
         run: |
           mlflow models build-docker \
             --model-uri "runs:/$RUN_ID/model" \
