@@ -23,6 +23,13 @@ accuracy = model.score(X_test, y_test)
 
 mlflow.log_param("n_estimators", 100)
 mlflow.log_metric("accuracy", accuracy)
-mlflow.sklearn.log_model(model, "model")
+
+mlflow.sklearn.log_model(
+    model,
+    artifact_path="model",
+    registered_model_name="student-performance-model"
+)
+
+
 
 
