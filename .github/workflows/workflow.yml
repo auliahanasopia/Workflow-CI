@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.12.7
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -39,21 +39,8 @@ jobs:
           mlflow run . --env-manager=local
 
       - name: Get latest MLflow run_id
-        env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/auliahanasopia/student-performance-mlops.mlflow
-          MLFLOW_TRACKING_USERNAME: auliahanasopia
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          EXPERIMENT_ID=$(mlflow experiments search | awk '$2=="CI-MLflow-Project" {print $1}')
-
-          if [ -z "$EXPERIMENT_ID" ]; then
-            echo "Experiment CI-MLflow-Project not found"
-            exit 1
-          fi
-
-          RUN_ID=$(mlflow runs list \
-            --experiment-id $EXPERIMENT_ID \
-            --max-results 1 | awk 'NR==2 {print $1}')
+          RUN_ID=$(ls -td mlruns/0/*/* | head -n1 | xargs -n1 basename)
 
           if [ -z "$RUN_ID" ]; then
             echo "No MLflow run found"
@@ -70,14 +57,9 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build & Push Docker Model
-        env:
-          MLFLOW_TRACKING_URI: https://dagshub.com/auliahanasopia/student-performance-mlops.mlflow
-          MLFLOW_TRACKING_USERNAME: auliahanasopia
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           mlflow models build-docker \
             --model-uri "runs:/$RUN_ID/model" \
             --name "${{ secrets.DOCKER_HUB_USERNAME }}/cc"
 
-          docker tag "${{ secrets.DOCKER_HUB_USERNAME }}/cc" "${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest"
           docker push "${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest"
