@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.12.7
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -29,6 +29,8 @@ jobs:
         env:
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
           MLFLOW_TRACKING_URI: https://dagshub.com/auliahanasopia/Workflow-CI.mlflow
+          MLFLOW_TRACKING_USERNAME: auliahanasopia
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           mlflow run . --env-manager=local
 
