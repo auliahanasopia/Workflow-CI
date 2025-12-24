@@ -1,7 +1,9 @@
-name: CI/CD MLflow
+name: workflow-ci-project
 
 on:
   push:
+    branches: [ "main" ]
+  pull_request:
     branches: [ "main" ]
 
 jobs:
@@ -9,36 +11,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Python 3.12.7
+      - name: Set up Python 3.12.7
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
       - name: Install dependencies
         run: |
-          pip install mlflow==2.19.0 dagshub scikit-learn pandas numpy
-
+          python -m pip install --upgrade pip
+          pip install mlflow==2.19.0 dagshub scikit-learn pandas numpy seaborn
       - name: Run MLflow Project
-        env:
-          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
-          MLFLOW_TRACKING_URI: https://dagshub.com/auliahanasopia/student-performance-mlops.mlflow
-          MLFLOW_TRACKING_USERNAME: auliahanasopia
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
-          mlflow run . --env-manager=local
-
-      - name: Login Docker Hub
+          export DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }}
+      - name: Get latest MLflow run_id
+        run: |
+          RUN_ID=$(ls -td mlruns/0/* 2>/dev/null | head -n1 | xargs -n1 basename)
+          if [ -z "$RUN_ID" ]; then
+            echo "No MLflow run found"
+            exit 1
+          fi
+          echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "Latest run_id: $RUN_ID"
+      - name: Build Docker Model
+        run: |
+          mlflow models build-docker \
+            --model-uri "runs:/$RUN_ID/model" \
+            --name "cc"
+      - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build & Push Docker Model
+      - name: Push Docker Image
         run: |
-          mlflow models build-docker \
-            --model-uri "models:/student-performance-model/Production" \
-            --name "${{ secrets.DOCKER_HUB_USERNAME }}/cc"
-
-          docker push "${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest"
+          docker tag cc ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/cc:latest
